@@ -1,7 +1,8 @@
-streamlit
-groq
+streamlit>=1.30.0
 sentence-transformers
 faiss-cpu
+groq
 pypdf
 python-docx
+gdown
 numpy
