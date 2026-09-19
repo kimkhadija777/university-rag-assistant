@@ -1,5 +1,9 @@
 .env
+vector_store/
+knowledge_base/
+download/
+university_rag/
+.streamlit/secrets.toml
 __pycache__/
 *.pyc
-.ipynb_checkpoints/
-.DS_Store
+
