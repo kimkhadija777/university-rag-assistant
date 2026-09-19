@@ -1,8 +1,11 @@
+import os
 import json
+import shutil
+import zipfile
 from pathlib import Path
 import streamlit as st
 import faiss
-import numpy as np
+import gdown
 from sentence_transformers import SentenceTransformer
 from groq import Groq
 
@@ -17,12 +20,26 @@ GROQ_MODEL = "openai/gpt-oss-120b"
 TOP_K = 5
 MIN_SIMILARITY = 0.25
 
-# Load API Key securely from secrets
 GROQ_API_KEY = st.secrets.get("GROQ_API_KEY", "")
 
-# Single-load resource caches to prevent reloading models on re-renders
+# Automatically prepare index files if not present on server boot
+@st.cache_resource
+def ensure_vector_store():
+    INDEX_DIR.mkdir(parents=True, exist_ok=True)
+    
+    if not INDEX_PATH.exists() or not METADATA_PATH.exists():
+        with st.spinner("📦 First-time initialization: Building Knowledge Base vector store..."):
+            try:
+                # Automatic Fallback Ingestion via ingest module
+                import ingest
+                ingest.main()
+            except Exception as e:
+                st.error(f"❌ Failed to run vector ingestion automatically: {e}")
+                st.stop()
+
 @st.cache_resource
 def load_faiss_and_metadata():
+    ensure_vector_store()
     if not INDEX_PATH.exists() or not METADATA_PATH.exists():
         return None, None
     index = faiss.read_index(str(INDEX_PATH))
@@ -40,7 +57,7 @@ st.markdown("Ask anything regarding policies, course outlines, deadlines, or reg
 index, all_chunks = load_faiss_and_metadata()
 
 if not index or not all_chunks:
-    st.error("⚠️ Vector index missing! Please run `python ingest.py` locally or upload pre-built index files.")
+    st.error("⚠️ Could not locate or build the vector index. Verify Google Drive access permissions.")
     st.stop()
 
 if not GROQ_API_KEY:
@@ -50,16 +67,13 @@ if not GROQ_API_KEY:
 embedding_model = load_embedding_model()
 client = Groq(api_key=GROQ_API_KEY)
 
-# Chat Session setup
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Render previous chat history
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Semantic Retrieval Engine
 def search(query: str):
     q_emb = embedding_model.encode([query], convert_to_numpy=True, normalize_embeddings=True).astype("float32")
     scores, indices = index.search(q_emb, TOP_K)
@@ -69,7 +83,6 @@ def search(query: str):
             results.append({"score": float(score), **all_chunks[idx]})
     return results
 
-# Handle User Interaction
 if prompt := st.chat_input("Ask your university question..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
@@ -112,9 +125,9 @@ Context:
                 answer = response.choices[0].message.content
                 sources = list({item["metadata"]["source"] for item in retrieved})
 
-            # Append Sources
             if sources:
                 answer += "\n\n**📚 Sources Used:**\n" + "\n".join([f"- `{src}`" for src in sources])
 
             st.markdown(answer)
             st.session_state.messages.append({"role": "assistant", "content": answer})
+            
