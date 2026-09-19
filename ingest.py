@@ -23,7 +23,8 @@ DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
 SOURCE_DIR.mkdir(parents=True, exist_ok=True)
 INDEX_DIR.mkdir(parents=True, exist_ok=True)
 
-DRIVE_URL = "https://drive.google.com/file/d/1Y4u5C9_4U6X5FNv8WqvITkC6fEy0j7n4/view?usp=drivesdk"
+# Updated Naya Google Drive Link
+DRIVE_URL = "https://drive.google.com/file/d/16k8Vpi7g8q7p9KH0YoCOCmlOBMSk4QNG/view?usp=drivesdk"
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 CHUNK_SIZE = 800
 CHUNK_OVERLAP = 120
@@ -142,4 +143,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-                
