@@ -30,7 +30,6 @@ def ensure_vector_store():
     if not INDEX_PATH.exists() or not METADATA_PATH.exists():
         with st.spinner("📦 First-time initialization: Building Knowledge Base vector store..."):
             try:
-                # Automatic Fallback Ingestion via ingest module
                 import ingest
                 ingest.main()
             except Exception as e:
